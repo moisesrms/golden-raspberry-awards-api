@@ -1,18 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
 import { Interval, Result } from './types/get-producer-intervals.dto';
-import { MovieDto } from 'movie/types/movie.dto';
+import { MovieDto } from '../movie/types/movie.dto';
+import { MovieService } from '../movie/movie.service';
 
 @Injectable()
 export class ReportService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly movieService: MovieService) {}
 
   async getProducerIntervals(): Promise<Result | null> {
-    const movies = await this.prisma.movie.findMany({
-      where: {
-        winner: true,
-      },
-    });
+    const movies = await this.movieService.findAllWinners();
 
     return this.calculateProducerIntervals(movies);
   }

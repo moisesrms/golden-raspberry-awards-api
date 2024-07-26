@@ -1,17 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from './../src/app.module';
-import { PrismaService } from './../src/prisma.service';
 import { MovieDto } from './../src/movie/types/movie.dto';
 import { movieListMock } from './../src/report/test/mock/movie.list.mock';
-import { AppService } from './../src/app.service';
 import { ReportService } from './../src/report/report.service';
+import { MovieService } from './../src/movie/movie.service';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;
-  let prisma: PrismaService;
-  let appService: AppService;
+  let movieService: MovieService;
   let reportService: ReportService;
 
   beforeEach(async () => {
@@ -19,12 +17,12 @@ describe('AppController (e2e)', () => {
       imports: [AppModule],
     }).compile();
 
-    prisma = moduleFixture.get<PrismaService>(PrismaService);
-    appService = moduleFixture.get<AppService>(AppService);
+    movieService = moduleFixture.get<MovieService>(MovieService);
     reportService = moduleFixture.get<ReportService>(ReportService);
 
     app = moduleFixture.createNestApplication();
     await app.init();
+    await movieService.initDB();
   });
 
   it('Health check', () => {
@@ -34,12 +32,10 @@ describe('AppController (e2e)', () => {
   it('Should receive the producer intervals report to a mocked movie list', async () => {
     const movies: MovieDto[] = movieListMock;
 
-    await prisma.movie.deleteMany();
+    movieService.clearDb();
 
     for await (const movie of movies) {
-      await prisma.movie.create({
-        data: movie,
-      });
+      movieService.create(movie);
     }
 
     const result = await request(app.getHttpServer()).get(
@@ -72,9 +68,9 @@ describe('AppController (e2e)', () => {
   });
 
   it('Should receive the producer intervals report to a csv loaded movie list', async () => {
-    await appService.initDB('movielist.csv');
+    await movieService.initDB('movielist.csv');
 
-    const movies = await appService.loadCSVToArray('movielist.csv');
+    const movies = await movieService.loadCSVToArray('movielist.csv');
 
     const resultExpected = reportService.calculateProducerIntervals(movies!);
 

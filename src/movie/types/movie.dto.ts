@@ -1,7 +1,3 @@
-export interface MovieDto {
-  year: number;
-  title: string;
-  studios: string;
-  producers: string;
-  winner: boolean;
-}
+import { Movie } from './movie';
+
+export type MovieDto = Omit<Movie, 'id'>;

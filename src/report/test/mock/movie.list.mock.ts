@@ -1,4 +1,4 @@
-import { MovieDto } from 'movie/types/movie.dto';
+import { MovieDto } from 'src/movie/types/movie.dto';
 
 export const movieListMock: MovieDto[] = [
   {

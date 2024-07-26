@@ -1,16 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ReportService } from '../report.service';
-import { PrismaService } from '../../prisma.service';
+import { ReportService } from '../../report/report.service';
 import { movieListMock } from './mock/movie.list.mock';
 import { nonDuplicateProducerMovieList } from './mock/non.duplicate.producer.movie.list';
-import { MovieDto } from 'movie/types/movie.dto';
+import { MovieDto } from '../../movie/types/movie.dto';
+import { MovieService } from '../../movie/movie.service';
 
 describe('calculateProducerIntervals', () => {
   let reportService: ReportService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [ReportService, PrismaService],
+      providers: [MovieService, ReportService],
     }).compile();
 
     reportService = module.get<ReportService>(ReportService);
@@ -21,7 +21,7 @@ describe('calculateProducerIntervals', () => {
       (movie) => movie.winner,
     );
 
-    const result = await reportService.calculateProducerIntervals(winnerMovies);
+    const result = reportService.calculateProducerIntervals(winnerMovies);
 
     expect(result).toEqual({
       min: [
@@ -46,7 +46,7 @@ describe('calculateProducerIntervals', () => {
   it('should return empty arrays if there are no intervals', async () => {
     const movies: MovieDto[] = [];
 
-    const result = await reportService.calculateProducerIntervals(movies);
+    const result = reportService.calculateProducerIntervals(movies);
 
     expect(result).toEqual({
       min: [],
@@ -63,5 +63,17 @@ describe('calculateProducerIntervals', () => {
       min: [],
       max: [],
     });
+  });
+
+  it('should split producers by comma and "and"', async () => {
+    const result = reportService.splitProducers(
+      'Avi Lerner, Kevin King Templeton, Yariv Lerner, and Les Weldon',
+    );
+    expect(result).toEqual([
+      'Avi Lerner',
+      'Kevin King Templeton',
+      'Yariv Lerner',
+      'Les Weldon',
+    ]);
   });
 });
