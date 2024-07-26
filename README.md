@@ -45,6 +45,22 @@ To run the project, follow these steps:
 
 Ensure the CSV file is located in the assets folder at the root of the project.
 
+## API Endpoints
+
+BaseUrl: http://localhost:3000
+
+1. /movie/: This path allows all operations including create, findAll, findOne, update, and remove.
+
+   - POST: http://localhost:3000/movie
+   - GET: http://localhost:3000/movie
+   - GET: http://localhost:3000/movie/:id
+   - PUT: http://localhost:3000/movie/:id
+   - DELETE: http://localhost:3000/movie/:id
+
+2. /report/producer-intervals: This path returns the expected results as specified in the test requirements.
+
+   - GET: http://localhost:3000/report/producer-intervals
+
 ## Integration Tests
 
 The project includes integration tests to ensure the data retrieved is consistent with the data provided in the proposal. These tests are implemented using Jest and can be run using
