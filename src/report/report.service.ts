@@ -17,46 +17,87 @@ export class ReportService {
     return this.calculateProducerIntervals(movies);
   }
 
-  calculateProducerIntervals(movies: MovieDto[]): Result | null {
-    const wins: Record<string, number[]> = {};
+  // Função para separar produtores considerando vírgulas e "and"
+  splitProducers(producerString: string): string[] {
+    if (!producerString) {
+      return [];
+    }
+    return producerString
+      .split(/,| and /)
+      .map((p) => p.trim())
+      .filter(Boolean);
+  }
 
-    // Collect all win years for each producer
-    movies.forEach((movie) => {
-      const producers = movie.producers.split(',').map((p) => p.trim());
-      producers.forEach((producer) => {
-        if (!wins[producer]) {
-          wins[producer] = [];
+  calculateProducerIntervals(awards: MovieDto[]): Result | null {
+    const producerWins: { [producer: string]: number[] } = {};
+
+    // Agrupa os anos de prêmios por produtor
+    awards.forEach((award) => {
+      this.splitProducers(award.producers).forEach((producer) => {
+        if (!producerWins[producer]) {
+          producerWins[producer] = [];
         }
-        wins[producer].push(movie.year);
+        producerWins[producer].push(award.year);
       });
     });
 
-    const intervals: Interval[] = [];
-
-    // Calculate intervals for each producer
-    Object.keys(wins).forEach((producer) => {
-      const years = wins[producer].sort((a, b) => a - b);
-      for (let i = 1; i < years.length; i++) {
-        intervals.push({
-          producer,
-          interval: years[i] - years[i - 1],
-          previousWin: years[i - 1],
-          followingWin: years[i],
-        });
-      }
-    });
-
-    if (intervals.length === 0) {
-      return { min: [], max: [] };
+    // Ordena os anos de prêmios para cada produtor
+    for (const producer in producerWins) {
+      producerWins[producer].sort((a, b) => a - b);
     }
 
-    // Find min and max intervals
-    const minInterval = Math.min(...intervals.map((i) => i.interval));
-    const maxInterval = Math.max(...intervals.map((i) => i.interval));
+    let minIntervals: Interval[] = [];
+    let maxIntervals: Interval[] = [];
+    let minInterval = Infinity;
+    let maxInterval = -Infinity;
 
-    const min = intervals.filter((i) => i.interval === minInterval);
-    const max = intervals.filter((i) => i.interval === maxInterval);
+    // Calcula os intervalos entre prêmios consecutivos
+    for (const producer in producerWins) {
+      const years = producerWins[producer];
+      for (let i = 1; i < years.length; i++) {
+        const interval = years[i] - years[i - 1];
+        if (interval < minInterval) {
+          minInterval = interval;
+          minIntervals = [
+            {
+              producer,
+              interval,
+              previousWin: years[i - 1],
+              followingWin: years[i],
+            },
+          ];
+        } else if (interval === minInterval) {
+          minIntervals.push({
+            producer,
+            interval,
+            previousWin: years[i - 1],
+            followingWin: years[i],
+          });
+        }
+        if (interval > maxInterval) {
+          maxInterval = interval;
+          maxIntervals = [
+            {
+              producer,
+              interval,
+              previousWin: years[i - 1],
+              followingWin: years[i],
+            },
+          ];
+        } else if (interval === maxInterval) {
+          maxIntervals.push({
+            producer,
+            interval,
+            previousWin: years[i - 1],
+            followingWin: years[i],
+          });
+        }
+      }
+    }
 
-    return { min, max };
+    return {
+      min: minIntervals,
+      max: maxIntervals,
+    };
   }
 }
