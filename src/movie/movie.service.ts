@@ -9,7 +9,10 @@ import csv from 'csv-parser';
 export class MovieService {
   private db: Database.Database;
 
-  constructor() {}
+  constructor() {
+    this.db = new Database(':memory:');
+    this.createTables();
+  }
 
   private createTables() {
     Logger.log('Creating tables...');
@@ -25,10 +28,7 @@ export class MovieService {
     `);
   }
 
-  async initDB(fileName?: string): Promise<void> {
-    this.db = new Database(':memory:');
-
-    this.createTables();
+  async seed(fileName?: string): Promise<void> {
     Logger.log('Importing movies from assets/movielist.csv');
     this.loadCSVToDatabase(`assets/${fileName ?? 'movielist.csv'}`);
   }
@@ -49,14 +49,12 @@ export class MovieService {
           winner: row.winner.toLowerCase() === 'yes',
         };
 
-        console.log({ movie });
-
         stmt.run(
           movie.year,
           movie.title,
           movie.studios,
           movie.producers,
-          movie.winner,
+          movie.winner ? 1 : 0,
         );
       })
       .on('end', async () => {
@@ -95,20 +93,25 @@ export class MovieService {
   }
 
   create(movie: MovieDto) {
-    const { year, title, studios, producers, winner } = movie;
     const stmt = this.db.prepare(
-      'INSERT INTO movies (year, title, studios, producers, winner) VALUES (?, ?, ?, ?, ?)',
+      'INSERT INTO Movie (year, title, studios, producers, winner) VALUES (?, ?, ?, ?, ?)',
     );
-    return stmt.run(year, title, studios, producers, winner).lastInsertRowid;
+    return stmt.run(
+      movie.year,
+      movie.title,
+      movie.studios,
+      movie.producers,
+      movie.winner ? 1 : 0,
+    ).lastInsertRowid;
   }
 
   async findAll() {
-    const stmt = this.db.prepare('SELECT * FROM movies');
+    const stmt = this.db.prepare('SELECT * FROM Movie');
     return stmt.all() as Movie[];
   }
 
   async findAllWinners() {
-    const stmt = this.db.prepare(`SELECT * FROM Movie WHERE winner = ${true}`);
+    const stmt = this.db.prepare('SELECT * FROM Movie WHERE winner = 1');
     return stmt.all() as Movie[];
   }
 
@@ -120,27 +123,27 @@ export class MovieService {
   async update(id: string, movie: Partial<MovieDto>) {
     const { year, title, studios, producers, winner } = movie;
     const stmt = this.db.prepare(
-      'UPDATE movies SET year = ?, title = ?, studios = ?, producers = ?, winner = ? WHERE id = ?',
+      'UPDATE Movie SET year = ?, title = ?, studios = ?, producers = ?, winner = ? WHERE id = ?',
     );
     const result: RunResult = stmt.run(
       year,
       title,
       studios,
       producers,
-      winner,
+      winner ? 1 : 0,
       id,
     );
     return result.changes;
   }
 
   async remove(id: string) {
-    const stmt = this.db.prepare('DELETE FROM movies WHERE id = ?');
+    const stmt = this.db.prepare('DELETE FROM Movie WHERE id = ?');
     const result: RunResult = stmt.run(id);
     return result.changes;
   }
 
   async clearDb() {
-    const stmt = this.db.prepare('DELETE FROM movies');
+    const stmt = this.db.prepare('DELETE FROM Movie');
     stmt.run();
   }
 }

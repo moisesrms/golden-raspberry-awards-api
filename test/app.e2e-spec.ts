@@ -22,7 +22,6 @@ describe('AppController (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     await app.init();
-    await movieService.initDB();
   });
 
   it('Health check', () => {
@@ -31,8 +30,6 @@ describe('AppController (e2e)', () => {
 
   it('Should receive the producer intervals report to a mocked movie list', async () => {
     const movies: MovieDto[] = movieListMock;
-
-    movieService.clearDb();
 
     for await (const movie of movies) {
       movieService.create(movie);
@@ -53,10 +50,10 @@ describe('AppController (e2e)', () => {
     expect(result.body?.max?.length).toBe(1);
 
     expect(result.body?.min?.[0]).toEqual({
-      producer: 'Bo Derek',
-      interval: 6,
-      previousWin: 1984,
-      followingWin: 1990,
+      producer: 'Joel Silver',
+      interval: 1,
+      previousWin: 1990,
+      followingWin: 1991,
     });
 
     expect(result.body?.max?.[0]).toEqual({
@@ -68,7 +65,7 @@ describe('AppController (e2e)', () => {
   });
 
   it('Should receive the producer intervals report to a csv loaded movie list', async () => {
-    await movieService.initDB('movielist.csv');
+    await movieService.seed('movielist.csv');
 
     const movies = await movieService.loadCSVToArray('movielist.csv');
 
